@@ -1,0 +1,18 @@
+En services vamos a meter toda la logica que queramos llevar a la api y asi evitamos meter logica en la ruta
+
+CLASE EN SERVICES
+class MessageService:
+    def __init__(self):
+        self.messages : List[Messages] = [
+            Messages(id=1, name='Ruben'),
+            Messages(id=1, name='Javier'),
+            Messages(id=1, name='Daniel')
+        ]
+
+    def get_all(self) -> List[Messages]:
+        return self.messages
+
+RUTA EN ROUTERS
+@router.get('/', response_model=List[Messages])
+def read_mesages(service: MessageService):
+    return service.get_all()
