@@ -1,7 +1,8 @@
 from typing import List
+from xmlrpc import server
 
 from fastapi import APIRouter
-from fastapi.params import Depends
+from fastapi.params import Depends, Query
 
 from dependencies.message_dependencies import get_message_service
 from models.message import Messages
@@ -53,3 +54,19 @@ def ejemplo() -> dict:
     return {
      'message' :  'esto es un ejemplo de router en FastAPI'
     }
+
+# Ruta variable http://127.0.0.1:8000/messages/find/1
+@router.get('/find/{id_find}', response_model= Messages | None)
+def find_messages(id_find : int, service: MessageService = Depends(get_message_service)):
+    return service.get_by_id(id_find)
+
+# Ruta con querrys http://127.0.0.1:8000/messages/details?message_id=1
+@router.get('/details', response_model= Messages | None)
+def get_message_url_params(name : str,
+                           #message_id : int = 2, # Este campo pasa a ser opciona, ya que insertamos un valor por defecto
+                           message_id : int = Query(..., ge=1) , # Valor obligatorio y mayor o igual a 1
+                           # Query(3, ge=1), # El query quiere decir que el valor por defecto
+                           # si no mete nada el usuario es 3, y si mete uno tiene que ser mayor o igual a 1 ge = greater or equal, hay mas funciones que ge
+                           service: MessageService = Depends(get_message_service)):
+    print(name)
+    return service.get_by_id(message_id)
