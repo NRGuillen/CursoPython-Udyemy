@@ -1,8 +1,8 @@
 from typing import List
-from xmlrpc import server
 
-from fastapi import APIRouter
-from fastapi.params import Depends, Query
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.params import Query
+from starlette import status
 
 from dependencies.message_dependencies import get_message_service
 from models.message import Messages
@@ -58,7 +58,11 @@ def ejemplo() -> dict:
 # Ruta variable http://127.0.0.1:8000/messages/find/1
 @router.get('/find/{id_find}', response_model= Messages | None)
 def find_messages(id_find : int, service: MessageService = Depends(get_message_service)):
-    return service.get_by_id(id_find)
+    message = service.get_by_id(id_find)
+    if message is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f'Mensaje con id {id_find} no existe')
+    return message
 
 # Ruta con querrys http://127.0.0.1:8000/messages/details?message_id=1
 @router.get('/details', response_model= Messages | None)
@@ -70,3 +74,25 @@ def get_message_url_params(name : str,
                            service: MessageService = Depends(get_message_service)):
     print(name)
     return service.get_by_id(message_id)
+
+@router.post('/create', response_model=Messages, status_code=status.HTTP_201_CREATED)
+def create_messages(message : Messages,
+                    service: MessageService = Depends(get_message_service)) -> Messages:
+    return service.create(message)
+
+@router.put('/update/{id_update}', response_model=Messages, status_code=status.HTTP_200_OK)
+def update_messages(id_update : int,
+                    message : Messages,
+                    service: MessageService = Depends(get_message_service)):
+    message_update =  service.update(id_update, message)
+    if message_update is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f'Mensaje con id {id_update} no existe'
+                            )
+    return message_update
+
+@router.delete('/delete/{id_delete}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_messages(id_delete : int, service: MessageService = Depends(get_message_service)):
+    deleted =  service.delete(id_delete)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Mensaje con id {id_delete} no existe')
